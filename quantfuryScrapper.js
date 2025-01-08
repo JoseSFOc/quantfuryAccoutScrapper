@@ -102,8 +102,11 @@ const htmlToCsv = (htmlFilePath, outputCsvPath) => {
       }
 
       if (!detailsText) {
-        // TODO: Obtain `toDetails` by position, not class
-        const toDetails = $(operation).find(".sc-hcFCrZ").text().trim();
+        const toDetails = $(operation)
+          .find("div:nth-of-type(2) > div")
+          .last()
+          .text()
+          .trim();
         if (toDetails.substring(0, 3) === "to ") {
           const specialChar = toDetails.charAt(3);
           detailsText = toDetails
