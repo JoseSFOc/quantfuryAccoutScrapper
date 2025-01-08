@@ -1,11 +1,12 @@
 const fs = require("fs");
 const cheerio = require("cheerio");
 const path = require("path");
+const moment = require("moment");
 
 const characters = {
   ι: "USDT",
-  Ϊ: "€",
-  Χ: "$",
+  Ϊ: "EUR",
+  Χ: "USD",
   Ά: "BTC",
 };
 
@@ -60,7 +61,8 @@ const htmlToCsv = (htmlFilePath, outputCsvPath) => {
     const dateDiv = dayChildren[0];
     const operationsDiv = dayChildren[1];
 
-    const date = $(dateDiv).text().replace(",", "");
+    const dateText = $(dateDiv).text().trim();
+    const date = moment(dateText, "MMM DD, YYYY").format("YYYY-MM-DD");
 
     const operations = $(operationsDiv).children();
     operations.each((_, operation) => {
@@ -79,18 +81,21 @@ const htmlToCsv = (htmlFilePath, outputCsvPath) => {
         .find('[data-testid^="history_item_time"]')
         .text()
         .trim();
-      const dateTime = date + " " + time;
+      const dateTime =
+        date + " " + moment(time, "h:mm:ss A").format("HH:mm:ss");
 
       let amount = $(operation)
         .find('[data-testid^="history_item_primary_amount"]')
         .text()
         .trim()
         .replace(",", "");
-      const firstChar = amount.charAt(0);
-      if (characters[firstChar] !== undefined) {
-        amount = amount.replace(firstChar, (m) => characters[m]);
+      let asset = amount.charAt(0);
+      amount = amount.substring(1);
+
+      if (characters[asset] !== undefined) {
+        asset = characters[asset];
       } else {
-        console.log(`Character for ${firstChar}, not found`);
+        console.log(`Character for ${asset}, not found`);
       }
 
       const details = $(operation).find("div > div > span > span");
@@ -115,7 +120,14 @@ const htmlToCsv = (htmlFilePath, outputCsvPath) => {
         }
       }
 
-      entries.push({ title, dateTime, amount, details: detailsText });
+      entries.push({
+        time: dateTime,
+        operation: title,
+        asset,
+        quantity: amount,
+        price: "",
+        value: detailsText,
+      });
     });
   });
 
