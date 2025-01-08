@@ -65,7 +65,7 @@ const htmlToCsv = (htmlFilePath, outputCsvPath) => {
     const operations = $(operationsDiv).children();
     operations.each((_, operation) => {
       let title = $(operation)
-        .find($('span[data-testid^="history_item_title"]'))
+        .find('span[data-testid^="history_item_title"]')
         .text()
         .trim();
 
@@ -76,13 +76,13 @@ const htmlToCsv = (htmlFilePath, outputCsvPath) => {
       }
 
       const time = $(operation)
-        .find($('[data-testid^="history_item_time"]'))
+        .find('[data-testid^="history_item_time"]')
         .text()
         .trim();
       const dateTime = date + " " + time;
 
       let amount = $(operation)
-        .find($('[data-testid^="history_item_primary_amount"]'))
+        .find('[data-testid^="history_item_primary_amount"]')
         .text()
         .trim()
         .replace(",", "");
@@ -93,15 +93,26 @@ const htmlToCsv = (htmlFilePath, outputCsvPath) => {
         console.log(`Character for ${firstChar}, not found`);
       }
 
-      // FIX: Using `.sc-gAhavb, .sc-gmPhgS` doesn't return all the details
-      const details = $(operation)
-        .find(".sc-gAhavb, .sc-gmPhgS")
-        .text()
-        .trim()
-        .replace("Copy to clipboard", "")
-        .replace("Copy to clipboard", "");
+      const details = $(operation).find("div > div > span > span");
+      let detailsText = details.text().trim();
+      if (details.length === 2) {
+        const wallet = $(details[0]).text().trim();
+        const tx = $(details[1]).text().trim();
+        detailsText = `wallet: ${wallet} - tx: ${tx}`;
+      }
 
-      entries.push({ title, dateTime, amount, details });
+      if (!detailsText) {
+        // TODO: Obtain `toDetails` by position, not class
+        const toDetails = $(operation).find(".sc-hcFCrZ").text().trim();
+        if (toDetails.substring(0, 3) === "to ") {
+          const specialChar = toDetails.charAt(3);
+          detailsText = toDetails
+            .replace(specialChar, (m) => characters[m])
+            .replace(",", "");
+        }
+      }
+
+      entries.push({ title, dateTime, amount, details: detailsText });
     });
   });
 
